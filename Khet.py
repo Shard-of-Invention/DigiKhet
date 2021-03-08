@@ -17,11 +17,11 @@ By:  Blake McGill
 Goals:
 Make grid string generator that generates an X by Y size board with each cell being able to hold a single character
 Make functional game that two players could play via text I/O.
-Make into game can play via HTTP PUT and GET requests
 Big O notation docstrings for all methods
 
 Stretch Goals:
 Make GUI
+Make into game can play via HTTP PUT and GET requests
 Make both Deflexion, Khet, and Khet 2 variants
 Make basic AI (IDEA: use __ge__, __le__, etc. methods for evaluation of pieces/board)
 Make error wrapper and handler class, named Maat (after Egyptian god of order)
@@ -34,11 +34,12 @@ Sprints:
 04/11/2021-04/25/2021: Set up Curator classes
 Log:
 -03/01/2021//Set up classes and brief explanation for some. Added rules dump and goals. Started Gamepiece class.
--03/07/2021//Created PieceSide dataclass as the value for each gamepiece's side. Created debug interface to test classes. Completed Gamepiece ABC for now.
+-03/07/2021//Created PieceSide dataclass as the value for each gamepiece's side. Created debug interface to test classes.
+-03/08/2021//Updated comments, docstrings, added them where possible, continuing gamepiece class development.
 
 '''
 from collections import deque
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 class Board:
@@ -48,20 +49,29 @@ class Board:
         pass
 
 class Laser:
-    #use Doubly Linked List to create laser
-    #calculates laser path, determine if hits gamepiece, use queue for laser (using beam offsets to draw beam)
+    '''
+    Class for laser operation. Uses Doubly-Linked List to 'build' laser.
+    '''
     def __init__(self):
-        print('REPLACE')
+        pass
     
     def __repr__(self):
-        return 'I am a LASER!'
+        pass
 
 @dataclass
 class PieceSide:
+    '''
+    Data class storing properties of a given gamepiece's side.\n
+    Default is non-reflective side that isn't shared.\n
+    If side is reflective, direction of laser movement is stored in reflects property.
+    '''
     reflects: bool = field(default=False)
     def __post_init__(self, reflects=False, shared=None):
-        if shared != None:
-            if reflects == True:
+        '''
+        Big O: O(1)
+        '''
+        if shared is not None:
+            if reflects is True:
                 self.reflects = shared
 
 class Gamepiece(ABC):
@@ -72,120 +82,167 @@ class Gamepiece(ABC):
     _SIDES = ['Top','Right','Bottom','Left'] # sides of gamepiece
     _DIRECTIONS = ['Up','Down','Left','Right'] # directions of movement
 
-    #set body, alive status, and location [x,y] to initial values (location received as argument), abstract method
     @abstractmethod
-    def __init__(self, location):
-        self.body = {}
-        self.isAlive = True
-        if location:
-            self.location = location
-        else: raise ValueError
-        for side in self._SIDES:
-            self.body[side] = None
-        pass
+    def __init__(self, location, faction='Red'):
+        '''
+        Abstract method that sets status to alive (present on board), location on board, and initializes gamepiece body (all sides to None)
+        Big O: O(1)
+        '''
+        try:
+            self.body = {}
+            self.isAlive = True #set alive to true
+            if (faction is 'Red' or faction is 'Silver'):
+                self.faction = faction
+            else: raise ValueError #else raise error
+            if location is list: #check right format
+                self.location = location #store location
+            else: raise ValueError #else raise error
+            for side in self._SIDES: #for each side of gamepiece, initialize to None
+                self.body[side] = None
+            pass #pass to force abstract method
+        except:
+            print('Error in initialization!')
 
     @property
     def name(self):
+        '''
+        Dataclass returning name of Gamepiece using built-in class/name methods
+        Big O: O(1)
+        '''
         return self.__class__.__name__
 
     def beam(self, side: PieceSide):
-        if self.body[side]:
-            if self.body[side].reflects:
-                return self.body[side].reflects
-        return False
+        '''
+        Simulates laser hitting gamepiece's side.
+        Returns next laser location if side is reflective, else returns False
+        Big O: O(1)
+        '''
+        try:
+            if self.body[side]: #if side isn't empty (non-initialized),
+                if self.body[side].reflects: #if it is reflective,
+                    return self.body[side].reflects #return direction of next laser location
+            return False #else return false
+        except:
+            print('Error in beam function!')
 
     def rotate(self, cw: bool = True):
+        '''
+        Rotate gamepiece 1/4 turn (90°) clockwise or counterclockwise using a deque.
+        Returns new body state.
+        Big O: O(1)
+        '''
         try: 
-            old_body = deque(self.body.values())
-            old_body.rotate(1) if cw == True else old_body.rotate(-1)
-            self.body = dict(zip(self.body.keys(), old_body))
-            return self.body
-        except TypeError:
-            print('Not valid rotation')
-            return 
+            old_body = deque(self.body.values()) #store old state's values in deque
+            old_body.rotate(1) if cw is True else old_body.rotate(-1) #shift values by 1 based on clockwise param
+            self.body = dict(zip(self.body.keys(), old_body)) #new body pairs old key with shifted value
+            return self.body #returns new body
+        except:
+            print('Error in rotate function!')
     
     def move(self, direction: str):
-        previous_location = self.location
+        '''
+        Move gamepiece one space away (no diagonal).
+        Returns new location.
+        Big O: O(1)
+        '''
         try:
-            i = self._DIRECTIONS.index(direction)
-            if i == 0 or i == 1:
-                self.location[1] = self.location[1] + 1 if i == 0 else self.location[1] - 1
-            elif i == 2 or i == 3:
-                self.location[0] = self.location[0] + 1 if i == 2 else self.location[0] - 1
-            else:
-                raise ValueError()
-        except ValueError:
-            self.location = previous_location
-            return None
-        return self.location
+            i = self._DIRECTIONS.index(direction) #get index for direction in _DIRECTIONS
+            if i == 0 or i == 1: #if move up or down
+                self.location[1] = self.location[1] + 1 if i is 0 else self.location[1] - 1 #set new y position based on direction
+            elif i == 2 or i == 3: #else if move left or right
+                self.location[0] = self.location[0] + 1 if i is 2 else self.location[0] - 1 #set new x position based on direction
+            else: #else invalid movement, return None (keep current location)
+                return None
+            return self.location
+        except:
+            print('Error in move function!')
 
     def to_Duat(self):
-        self.isAlive = False
-
-class Pharaoh(Gamepiece):
-    def __init__():
-        print('REPLACE')
-
-class Scarab(Gamepiece):
-    def __init__():
-        print('REPLACE')   
- 
-class Pyramid(Gamepiece):
-    def __init__():
-        print('REPLACE') 
-
-class Obelisk(Gamepiece):
-    def __init__():
-        print('REPLACE')
-
-class Anubis(Gamepiece):
-    def __init__():
-        print('REPLACE')
+        '''
+        Activate gamepiece death (to Duat, Egyptian underworld)
+        '''
+        self.isAlive = False #set alive status to false
+        self.location = None #set location to none
 
 class Sphinx(Gamepiece):
+    '''
+    Gamepiece child class for Sphinx Gamepiece.
+    Sphinx is stationary, and has limited rotation capabilities.
+    '''
+    default_location = dict({'Red': [9,0], 'Black': [0,7]}) #default locations for each player's sphinx
 
-    default_location = dict({'Red': [9,0], 'Black': [0,7]})
-
-    def __init__(self, faction='Red', *location):
-        if len(location) != 0:
-            print(f'{location} ignored. Sphinx placed based on faction.')
-        if (faction == 'Red' or faction == 'Silver'):
-            super().__init__(self.default_location[faction])
-            self.faction = faction
-            for side in self._SIDES:
-                self.body[side] = PieceSide()
-            if self.faction == 'Red':
-                self.body['Top'] = Laser()
-            else: self.body['Bottom'] = Laser()
-        else: raise ValueError
+    def __init__(self, *location, faction='Red'):
+        '''
+        Initialize gamepiece for Sphinx. Ignores location parameter, but doesn't throw error.
+        Sphinx placed based on faction.
+        '''
+        try:
+            if len(location) != 0: #if location isn't empty
+                print(f'{location} ignored. Sphinx placed based on faction.') #notify users
+            super().__init__(self.default_location[faction], faction) #run gamepiece class init with location and faction
+            for side in self._SIDES: #for each side of gamepiece
+                self.body[side] = PieceSide() #set to nonreflective
+            if self.faction == 'Red': #if faction is red
+                self.body['Top'] = Laser() #face up
+            else: self.body['Bottom'] = Laser() #else face down
+        except:
+            print('Error in Sphinx initialization!')
 
     
     def move(self, *direction):
+        '''
+        Overwrites Gamepiece move method to indicate Sphinxes can't move.
+        '''
         print(f'Can\'t move {direction}; Reason: {self.name} gamepieces can\'t move.')
 
     def rotate(self):
-        if isinstance(self.body['Top'], Laser) or isinstance(self.body['Bottom'], Laser):
-            super().rotate(False)
-        else: super().rotate(True)
-        for side in self._SIDES:
-            if isinstance(self.body[side], Laser):
-                return self.body[side]
+        '''
+        Overwritten rotate class that restricts movement of Sphinx to never aim laser at board edge.
+        '''
+        if isinstance(self.body['Top'], Laser) or isinstance(self.body['Bottom'], Laser): #if laser is facing up or down
+            super().rotate(False) #call Gamepiece method for counterclockwise rotation
+        else: super().rotate(True) #else call for clockwise rotation
+        for side in self._SIDES: #for each side in lookup list
+            if isinstance(self.body[side], Laser): #if side has laser
+                return self.body[side] #return side with laser on it
+    
+    def to_Duat(self):
+        print('Sphinxes never die.')
 
+class Pharaoh(Gamepiece):
+    def __init__(self):
+        pass
+
+class Scarab(Gamepiece):
+    def __init__(self):
+        pass
+
+class Pyramid(Gamepiece):
+    def __init__(self):
+        pass
+
+class Obelisk(Gamepiece):
+    def __init__(self):
+        pass
+
+class Anubis(Gamepiece):
+    def __init__(self):
+        pass
 
 class Gamemaster():
     # rulemaster, checks for wins
     def __init__(self):
-        print('REPLACE')
+        pass
 
 class Player():
     # player of game (requires 2)
-    def __init__():
-        print('REPLACE')
+    def __init__(self):
+        pass
 
 class Curator():
     # 'plays' game, asking players for input, displaying board, moves pieces, manages turns and time, checks with gamemaster for rules
-    def __init__():
-        print('REPLACE') 
+    def __init__(pass):
+        self
 
 '''
 Debug Interface: uncomment if __name__ statement to activate debug interface
