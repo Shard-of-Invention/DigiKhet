@@ -17,11 +17,11 @@ By:  Blake McGill
 Goals:
 Make grid string generator that generates an X by Y size board with each cell being able to hold a single character
 Make functional game that two players could play via text I/O.
+Make into game can play via HTTP PUT and GET requests
 Big O notation docstrings for all methods
 
 Stretch Goals:
 Make GUI
-Make into game can play via HTTP PUT and GET requests
 Make both Deflexion, Khet, and Khet 2 variants
 Make basic AI (IDEA: use __ge__, __le__, etc. methods for evaluation of pieces/board)
 Make error wrapper and handler class, named Maat (after Egyptian god of order)
