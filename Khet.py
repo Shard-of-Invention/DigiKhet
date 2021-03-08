@@ -34,7 +34,7 @@ Sprints:
 04/11/2021-04/25/2021: Set up Curator classes
 Log:
 -03/01/2021//Set up classes and brief explanation for some. Added rules dump and goals. Started Gamepiece class.
--03/07/2021//Created PieceSide dataclass as the value for each gamepiece's side. Created debug interface to test classes.
+-03/07/2021//Created PieceSide dataclass as the value for each gamepiece's side. Created debug interface to test classes. Completed Gamepiece ABC for now.
 
 '''
 from collections import deque
@@ -44,10 +44,11 @@ from dataclasses import dataclass, field
 class Board:
     #10x8
     #holds state of board, including piece position, player piece count, tile type
-    def __init__():
-        print('REPLACE')
+    def __init__(self):
+        pass
 
 class Laser:
+    #use Doubly Linked List to create laser
     #calculates laser path, determine if hits gamepiece, use queue for laser (using beam offsets to draw beam)
     def __init__(self):
         print('REPLACE')
