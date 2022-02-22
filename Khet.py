@@ -43,13 +43,10 @@ from dataclasses import dataclass, field
 from msilib.schema import Error
 from tempfile import TemporaryFile
 
-#Reflection Options
-NORTH = 'N'
-SOUTH = 'S'
-EAST  = 'E'
-WEST  = 'W'
-NOREFLECT = ''
-_REFLECT_OPTIONS = (NORTH, SOUTH, EAST, WEST, NOREFLECT)
+NORTH = 0
+EAST = 1
+SOUTH = 2
+WEST = 3
 
 class Board:
     #10x8
@@ -69,17 +66,43 @@ class Laser:
 
 class ReflectMatrix:
     '''
+    Class for handling reflection of the laser for each gamepiece.\n
+    init_matrix, list of reflection values for each side of the game piece \n
+        valid values: -1, 0, 1 \n
+        value at each index in array corresponds with direction laser will reflect to on opposite axis \n
+        if 0, no reflection \n
+        format: [NORTH, EAST, SOUTH, WEST] \n
+        example: [-1,0,0,1] would mean laser reflects north when from west, and west from north \n
     '''
     # attributes declaration
+    def __init__(self, init_matrix):
+        if len(init_matrix) is not 4:   
+            raise ValueError('Invalid matrix.')
+        for i in range(4):
+            if type(init_matrix[i]) is not int:
+                raise ValueError('Invalid matrix.')
+            if init_matrix[i] > 1 or init_matrix[i] < -1:
+                raise ValueError('Invalid matrix.')
+        self._matrix = init_matrix
+
+    def reflect(self, side):
+        if self.matrix[side] is not 0:
+            return (self.matrix[side], 0) if side % 2 is 0 else (0, self.matrix[side], 0)
+        else: return None
+
     @property
-    def __init__(self, side_north, side_south, side_east, side_west):
-        self.matrix = [side_north, side_south, side_east, side_west]
-        for side in self.matrix:
-            if side not in _REFLECT_OPTIONS:
-                raise ValueError(f'Invalid side in reflect matrix: {side}.')
-    
-    def reflect(self, side, location):
-        if self.matrix[]
+    def matrix(self):
+        return self._matrix
+
+    @matrix.setter
+    def matrix(self, new_matrix : list):
+        if len(list) is not 4:
+            raise ValueError('Invalid matrix.')
+        self._matrix = new_matrix
+        
+            
+        
+
 
 # @dataclass
 # class ReflectMatrix:
@@ -96,6 +119,7 @@ class Gamepiece(ABC):
     TODO: make __str__ and __repr__ functions for each gamepiece (make abstract method in base class) to return string for full characteristics dump, __repr__ for Board display
     '''
     
+    @abstractmethod
     def __init__(self, location: list, faction):
         '''
         Abstract method for initializing gamepiece
@@ -113,51 +137,39 @@ class Gamepiece(ABC):
             self._is_alive = True
             self._type = None
             self._reflection = None
+            pass
         except:
             print(f'Error in initialization of gamepiece.')
-        #
-    @abstractmethod
-    def __init__(self, location, faction='Red'):
-        '''
-        Abstract method that sets status to alive (present on board), location on board, and initializes gamepiece body (all sides to None)
-        Big O: O(1)
-        '''
-        try:
-            self.body = {}
-            self.isAlive = True #set alive to true
-            if (faction is 'Red' or faction is 'Silver'):
-                self.faction = faction
-            else: raise ValueError #else raise error
-            if location is list: #check right format
-                self.location = location #store location
-            else: raise ValueError #else raise error
-            for side in self._SIDES: #for each side of gamepiece, initialize to None
-                self.body[side] = None
-            pass #pass to force abstract method
-        except:
-            print('Error in initialization!')
+            pass
 
     @property
     def name(self):
         '''
-        Dataclass returning name of Gamepiece using built-in class/name methods
+        Property returning name of Gamepiece using built-in class/name methods
         Big O: O(1)
         '''
         return self.__class__.__name__
 
-    def beam(self, side: PieceSide):
-        '''
-        Simulates laser hitting gamepiece's side.
-        Returns next laser location if side is reflective, else returns False
-        Big O: O(1)
-        '''
-        try:
-            if self.body[side]: #if side isn't empty (non-initialized),
-                if self.body[side].reflects: #if it is reflective,
-                    return self.body[side].reflects #return direction of next laser location
-            return False #else return false
-        except:
-            print('Error in beam function!')
+    @property
+    def reflection(self):
+        return self._reflection
+    
+    @reflection.setter
+    def reflection(self, matrix: list):
+        self.reflection = ReflectMatrix(matrix)
+    # def beam(self, side: PieceSide):
+    #     '''
+    #     Simulates laser hitting gamepiece's side.
+    #     Returns next laser location if side is reflective, else returns False
+    #     Big O: O(1)
+    #     '''
+    #     try:
+    #         if self.body[side]: #if side isn't empty (non-initialized),
+    #             if self.body[side].reflects: #if it is reflective,
+    #                 return self.body[side].reflects #return direction of next laser location
+    #         return False #else return false
+    #     except:
+    #         print('Error in beam function!')
 
     def rotate(self, cw: bool = True):
         '''
@@ -166,7 +178,7 @@ class Gamepiece(ABC):
         Big O: O(1)
         '''
         try: 
-            old_body = deque(self.body.values()) #store old state's values in deque
+            old_matrix = deque(self._reflection) #store old state's values in deque
             old_body.rotate(1) if cw is True else old_body.rotate(-1) #shift values by 1 based on clockwise param
             self.body = dict(zip(self.body.keys(), old_body)) #new body pairs old key with shifted value
             return self.body #returns new body
