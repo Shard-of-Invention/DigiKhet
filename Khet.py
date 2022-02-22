@@ -8,10 +8,9 @@
 88      .a8P   88  "8a,   ,d88  88  88     "88,   88       88  "8b,   ,aa    88,    
 88888888Y"'    88   `"YbbdP"Y8  88  88       Y8b  88       88   `"Ybbd8"'    "Y888  
                     aa,    ,88                                                      
-                     "YbbbdP"                                                       
+                     "YbbbdP"  
 
 A digital representation of one of my favorite childhood board games: Khet - the Laser Board Game!
-
 By:  Blake McGill
 
 Goals:
@@ -32,15 +31,25 @@ Sprints:
 03/15/2021-03/28/2021: Set up Board and Laser classes
 03/29/2021-04/10/2021: Set up Gamemaster and Player classes
 04/11/2021-04/25/2021: Set up Curator classes
+
 Log:
 -03/01/2021//Set up classes and brief explanation for some. Added rules dump and goals. Started Gamepiece class.
 -03/07/2021//Created PieceSide dataclass as the value for each gamepiece's side. Created debug interface to test classes.
 -03/08/2021//Updated comments, docstrings, added them where possible, continuing gamepiece class development.
-
 '''
 from collections import deque
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from msilib.schema import Error
+from tempfile import TemporaryFile
+
+#Reflection Options
+NORTH = 'N'
+SOUTH = 'S'
+EAST  = 'E'
+WEST  = 'W'
+NOREFLECT = ''
+_REFLECT_OPTIONS = (NORTH, SOUTH, EAST, WEST, NOREFLECT)
 
 class Board:
     #10x8
@@ -58,30 +67,55 @@ class Laser:
     def __repr__(self):
         pass
 
-@dataclass
-class PieceSide:
+class ReflectMatrix:
     '''
-    Data class storing properties of a given gamepiece's side.\n
-    Default is non-reflective side that isn't shared.\n
-    If side is reflective, direction of laser movement is stored in reflects property.
     '''
-    reflects: bool = field(default=False)
-    def __post_init__(self, reflects=False, shared=None):
-        '''
-        Big O: O(1)
-        '''
-        if shared is not None:
-            if reflects is True:
-                self.reflects = shared
+    # attributes declaration
+    @property
+    def __init__(self, side_north, side_south, side_east, side_west):
+        self.matrix = [side_north, side_south, side_east, side_west]
+        for side in self.matrix:
+            if side not in _REFLECT_OPTIONS:
+                raise ValueError(f'Invalid side in reflect matrix: {side}.')
+    
+    def reflect(self, side, location):
+        if self.matrix[]
+
+# @dataclass
+# class ReflectMatrix:
+#     '''
+#     Data class storing properties of a given gamepiece's side.\n
+#     '''
+#     def __
+#     reflects: bool = field(default=False)
+#     def __post_init__(self):
 
 class Gamepiece(ABC):
     '''
     Abstract Base Class for Khet gamepieces. Holds gamepiece's body, board location, if its in play or not, and has methods for movement/rotation/deletion
     TODO: make __str__ and __repr__ functions for each gamepiece (make abstract method in base class) to return string for full characteristics dump, __repr__ for Board display
     '''
-    _SIDES = ['Top','Right','Bottom','Left'] # sides of gamepiece
-    _DIRECTIONS = ['Up','Down','Left','Right'] # directions of movement
-
+    
+    def __init__(self, location: list, faction):
+        '''
+        Abstract method for initializing gamepiece
+        Big O: O(1)
+        Gamepiece properties:
+        Location: location (X,Y) (TODO: may need to be moved to Board?)
+        Type: name of gamepiece type (ex. Scarab)
+        Faction: Imhotep (Silver) or Osiris (Red)
+        Reflection Matrix: matrix for when laser hits gamepiece
+        is_alive: Boolean for status
+        '''
+        try:
+            self.location = location
+            self.faction = faction
+            self._is_alive = True
+            self._type = None
+            self._reflection = None
+        except:
+            print(f'Error in initialization of gamepiece.')
+        #
     @abstractmethod
     def __init__(self, location, faction='Red'):
         '''
@@ -242,7 +276,7 @@ class Player():
 class Curator():
     # 'plays' game, asking players for input, displaying board, moves pieces, manages turns and time, checks with gamemaster for rules
     def __init__(pass):
-        self
+        pass
 
 '''
 Debug Interface: uncomment if __name__ statement to activate debug interface
@@ -267,9 +301,7 @@ if __name__ == '__main__': debug()
 '''
     Rules Dump from wikipedia:
     Each player starts the game with 14 playing pieces (12 in Deflexion) on a 10x8 board, arranged in one of several predefined configurations, and a laser. The board has some squares (right file, left corners) that are restricted to pieces of one side or the other, preventing the creation of impenetrable fortress positions. In the original game, the lasers were built into the gameboard; in the "Khet 2.0" version, the lasers are instead built into two extra Sphinx playing pieces, which can be rotated as a player's turn even though they cannot be moved from their starting positions. Scarab (formerly "Djed") and Pyramid pieces have mirrors (one on the Pyramid, and two on the Scarab) positioned such that when the laser beam strikes a reflective side, it reflects at a 90° angle. Players try to position pieces in a fashion that allows the laser beam to reflect into the opponent's Pharaoh, thus winning the game; however, they must also try to protect their own Pharaoh from being struck by the laser beam at the same time. On each turn, a player either moves a piece one square in any direction, or rotates a piece 90 degrees clockwise or counterclockwise. After moving, the player must fire his or her laser, and any piece of either color hit on a non-reflecting side is removed from play.
-
     The pieces in the game are:
-
     Pharaoh (1 of each color)
         The Pharaoh is the most important piece for each side. If hit with a laser, it is destroyed and its owner loses the game. Similar to a king in chess, the Pharaoh pieces are comparatively weak, and so are often not moved unless under duress.
     Scarab/Djed (2 of each color)
@@ -282,6 +314,5 @@ if __name__ == '__main__': debug()
         Anubis replaced Obelisks in Khet 2.0; they have the advantage that, despite still being unmirrored, they are not affected by a laser strike on the front; they must be hit on the sides or rear in order to be eliminated.
     Sphinx (1 of each color)
         In Khet 2.0, the Sphinxes hold the lasers. They may not move (each player's is located at their closest right-hand corner) but may be rotated in place so as to fire down the rank instead of the file. A Sphinx is unaffected by laser fire, whether the opponent's or its own reflected back upon itself.
-
     Three opening setups are most commonly used: Classic, which is the standard starting configuration, and is the best setup for one's first time playing; Imhotep, which is a variation on the Classic setup that introduces new defensive possibilities; and Dynasty, which has a fairly even mix of offense and defense, and moves quickly. However, any configuration agreed upon by both players can be used. In Deflexion, half the pieces were gold, and half were silver. When the company changed the name to Khet, the gold pieces were changed to red. In Deflexion, gold always goes first, and in Khet, silver always goes first.
 '''
