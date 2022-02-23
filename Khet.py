@@ -36,6 +36,7 @@ Log:
 -03/01/2021//Set up classes and brief explanation for some. Added rules dump and goals. Started Gamepiece class.
 -03/07/2021//Created PieceSide dataclass as the value for each gamepiece's side. Created debug interface to test classes.
 -03/08/2021//Updated comments, docstrings, added them where possible, continuing gamepiece class development.
+-02/20/2022//Replaced method for reflection of laser when it interacts with gamepiece (new-> ReflectMatrix)
 '''
 from collections import deque
 from abc import ABC, abstractmethod
@@ -47,6 +48,8 @@ NORTH = 0
 EAST = 1
 SOUTH = 2
 WEST = 3
+DIRECTIONS = (NORTH, EAST, SOUTH, WEST)
+MOVE_MATRIX = ([0,1],[1,0],[0,-1],[-1,0])
 
 class Board:
     #10x8
@@ -74,7 +77,6 @@ class ReflectMatrix:
         format: [NORTH, EAST, SOUTH, WEST] \n
         example: [-1,0,0,1] would mean laser reflects north when from west, and west from north \n
     '''
-    # attributes declaration
     def __init__(self, init_matrix):
         if len(init_matrix) is not 4:   
             raise ValueError('Invalid matrix.')
@@ -99,19 +101,6 @@ class ReflectMatrix:
         if len(list) is not 4:
             raise ValueError('Invalid matrix.')
         self._matrix = new_matrix
-        
-            
-        
-
-
-# @dataclass
-# class ReflectMatrix:
-#     '''
-#     Data class storing properties of a given gamepiece's side.\n
-#     '''
-#     def __
-#     reflects: bool = field(default=False)
-#     def __post_init__(self):
 
 class Gamepiece(ABC):
     '''
@@ -125,13 +114,14 @@ class Gamepiece(ABC):
         Abstract method for initializing gamepiece
         Big O: O(1)
         Gamepiece properties:
-        Location: location (X,Y) (TODO: may need to be moved to Board?)
+        Location: location (X,Y) (TODO: may need to be moved to Board or reference to Board)
         Type: name of gamepiece type (ex. Scarab)
         Faction: Imhotep (Silver) or Osiris (Red)
         Reflection Matrix: matrix for when laser hits gamepiece
         is_alive: Boolean for status
         '''
         try:
+            assert(len(location) == 2)
             self.location = location
             self.faction = faction
             self._is_alive = True
@@ -157,19 +147,6 @@ class Gamepiece(ABC):
     @reflection.setter
     def reflection(self, matrix: list):
         self.reflection = ReflectMatrix(matrix)
-    # def beam(self, side: PieceSide):
-    #     '''
-    #     Simulates laser hitting gamepiece's side.
-    #     Returns next laser location if side is reflective, else returns False
-    #     Big O: O(1)
-    #     '''
-    #     try:
-    #         if self.body[side]: #if side isn't empty (non-initialized),
-    #             if self.body[side].reflects: #if it is reflective,
-    #                 return self.body[side].reflects #return direction of next laser location
-    #         return False #else return false
-    #     except:
-    #         print('Error in beam function!')
 
     def rotate(self, cw: bool = True):
         '''
@@ -178,27 +155,22 @@ class Gamepiece(ABC):
         Big O: O(1)
         '''
         try: 
-            old_matrix = deque(self._reflection) #store old state's values in deque
-            old_body.rotate(1) if cw is True else old_body.rotate(-1) #shift values by 1 based on clockwise param
-            self.body = dict(zip(self.body.keys(), old_body)) #new body pairs old key with shifted value
-            return self.body #returns new body
+            new_matrix = deque(self.reflection.matrix)
+            new_matrix.rotate(1) if cw is True else new_matrix.rotate(-1) 
+            self.reflection = ReflectMatrix(new_matrix)
+            return list(new_matrix) 
         except:
             print('Error in rotate function!')
     
-    def move(self, direction: str):
+    def move(self, direction):
         '''
         Move gamepiece one space away (no diagonal).
         Returns new location.
         Big O: O(1)
         '''
         try:
-            i = self._DIRECTIONS.index(direction) #get index for direction in _DIRECTIONS
-            if i == 0 or i == 1: #if move up or down
-                self.location[1] = self.location[1] + 1 if i is 0 else self.location[1] - 1 #set new y position based on direction
-            elif i == 2 or i == 3: #else if move left or right
-                self.location[0] = self.location[0] + 1 if i is 2 else self.location[0] - 1 #set new x position based on direction
-            else: #else invalid movement, return None (keep current location)
-                return None
+            assert(direction in DIRECTIONS)
+            self.location = [loc + offset for loc, offset in zip(self.location, MOVE_MATRIX(direction))]
             return self.location
         except:
             print('Error in move function!')
@@ -207,7 +179,7 @@ class Gamepiece(ABC):
         '''
         Activate gamepiece death (to Duat, Egyptian underworld)
         '''
-        self.isAlive = False #set alive status to false
+        self._is_alive = False #set alive status to false
         self.location = None #set location to none
 
 class Sphinx(Gamepiece):
