@@ -1,3 +1,4 @@
+
 '''                                                                     
 88888888ba,    88               88  88      a8P   88                                
 88      `"8b   ""               ""  88    ,88'    88                         ,d     
@@ -50,6 +51,9 @@ SOUTH = 2
 WEST = 3
 DIRECTIONS = (NORTH, EAST, SOUTH, WEST)
 MOVE_MATRIX = ([0,1],[1,0],[0,-1],[-1,0])
+
+OSIRIS = 'Red'
+IMHOTEP = 'Silver'
 
 class Board:
     #10x8
@@ -187,22 +191,19 @@ class Sphinx(Gamepiece):
     Gamepiece child class for Sphinx Gamepiece.
     Sphinx is stationary, and has limited rotation capabilities.
     '''
-    default_location = dict({'Red': [9,0], 'Black': [0,7]}) #default locations for each player's sphinx
+    _DEFAULT_LOCATION = dict({OSIRIS: [9,0], IMHOTEP: [0,7]}) #default locations for each player's sphinx
 
-    def __init__(self, *location, faction='Red'):
+    def __init__(self, faction='Red', *location):
         '''
-        Initialize gamepiece for Sphinx. Ignores location parameter, but doesn't throw error.
+        Initialize gamepiece for Sphinx. Ignores location parameter.
         Sphinx placed based on faction.
         '''
         try:
-            if len(location) != 0: #if location isn't empty
-                print(f'{location} ignored. Sphinx placed based on faction.') #notify users
-            super().__init__(self.default_location[faction], faction) #run gamepiece class init with location and faction
-            for side in self._SIDES: #for each side of gamepiece
-                self.body[side] = PieceSide() #set to nonreflective
-            if self.faction == 'Red': #if faction is red
-                self.body['Top'] = Laser() #face up
-            else: self.body['Bottom'] = Laser() #else face down
+            super().__init__(self._DEFAULT_LOCATION[faction], faction) #run gamepiece class init with location and faction
+            #reflect matrix all zeroes
+            if self.faction == IMHOTEP: #if faction is red
+            #matrix has [1, 0, 0, 0] NORTH
+            else: #matrix has [0, 0, 1, 0] SOUTH
         except:
             print('Error in Sphinx initialization!')
 
