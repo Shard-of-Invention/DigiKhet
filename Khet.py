@@ -1,4 +1,3 @@
-
 '''                                                                     
 88888888ba,    88               88  88      a8P   88                                
 88      `"8b   ""               ""  88    ,88'    88                         ,d     
@@ -10,29 +9,19 @@
 88888888Y"'    88   `"YbbdP"Y8  88  88       Y8b  88       88   `"Ybbd8"'    "Y888  
                     aa,    ,88                                                      
                      "YbbbdP"  
-
 A digital representation of one of my favorite childhood board games: Khet - the Laser Board Game!
 By:  Blake McGill
-
 Goals:
 Make grid string generator that generates an X by Y size board with each cell being able to hold a single character
+    -equal spacing characters required
 Make functional game that two players could play via text I/O.
-Big O notation docstrings for all methods
 
-Stretch Goals:
 Make GUI
 Make into game can play via HTTP PUT and GET requests
 Make both Deflexion, Khet, and Khet 2 variants
 Make basic AI (IDEA: use __ge__, __le__, etc. methods for evaluation of pieces/board)
-Make error wrapper and handler class, named Maat (after Egyptian god of order)
+Make error wrapper and handler class
 Make Khet-specific error types
-
-Sprints:
-03/01/2021-03/14/2021: Set up all Gamepiece classes
-03/15/2021-03/28/2021: Set up Board and Laser classes
-03/29/2021-04/10/2021: Set up Gamemaster and Player classes
-04/11/2021-04/25/2021: Set up Curator classes
-
 Log:
 -03/01/2021//Set up classes and brief explanation for some. Added rules dump and goals. Started Gamepiece class.
 -03/07/2021//Created PieceSide dataclass as the value for each gamepiece's side. Created debug interface to test classes.
@@ -44,6 +33,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from msilib.schema import Error
 from tempfile import TemporaryFile
+from xmlrpc.client import Boolean
 
 NORTH = 0
 EAST = 1
@@ -54,7 +44,32 @@ MOVE_MATRIX = ([0,1],[1,0],[0,-1],[-1,0])
 
 OSIRIS = 'Red'
 IMHOTEP = 'Silver'
+def rotate(self, cw: bool = True):
+    '''
+    Rotate gamepiece 1/4 turn (90°) clockwise or counterclockwise using a deque.
+    Returns new body state.
+    Big O: O(1)
+    '''
+    try: 
+        new_matrix = deque(self.reflection.matrix)
+        new_matrix.rotate(1) if cw is True else new_matrix.rotate(-1) 
+        self.reflection = ReflectMatrix(new_matrix)
+        return list(new_matrix) 
+    except:
+        print('Error in rotate function!')
 
+def move(self, direction):
+    '''
+    Move gamepiece one space away (no diagonal).
+    Returns new location.
+    Big O: O(1)
+    '''
+    try:
+        assert(direction in DIRECTIONS)
+        self.location = [loc + offset for loc, offset in zip(self.location, MOVE_MATRIX(direction))]
+        return self.location
+    except:
+        print('Error in move function!')
 class Board:
     #10x8
     #holds state of board, including piece position, player piece count, tile type
@@ -71,70 +86,17 @@ class Laser:
     def __repr__(self):
         pass
 
-class ReflectMatrix:
-    '''
-    Class for handling reflection of the laser for each gamepiece.\n
-    init_matrix, list of reflection values for each side of the game piece \n
-        valid values: -1, 0, 1 \n
-        value at each index in array corresponds with direction laser will reflect to on opposite axis \n
-        if 0, no reflection \n
-        format: [NORTH, EAST, SOUTH, WEST] \n
-        example: [-1,0,0,1] would mean laser reflects north when from west, and west from north \n
-    '''
-    def __init__(self, init_matrix):
-        if len(init_matrix) is not 4:   
-            raise ValueError('Invalid matrix.')
-        for i in range(4):
-            if type(init_matrix[i]) is not int:
-                raise ValueError('Invalid matrix.')
-            if init_matrix[i] > 1 or init_matrix[i] < -1:
-                raise ValueError('Invalid matrix.')
-        self._matrix = init_matrix
-
-    def reflect(self, side):
-        if self.matrix[side] is not 0:
-            return (self.matrix[side], 0) if side % 2 is 0 else (0, self.matrix[side], 0)
-        else: return None
-
-    @property
-    def matrix(self):
-        return self._matrix
-
-    @matrix.setter
-    def matrix(self, new_matrix : list):
-        if len(list) is not 4:
-            raise ValueError('Invalid matrix.')
-        self._matrix = new_matrix
-
 class Gamepiece(ABC):
     '''
-    Abstract Base Class for Khet gamepieces. Holds gamepiece's body, board location, if its in play or not, and has methods for movement/rotation/deletion
-    TODO: make __str__ and __repr__ functions for each gamepiece (make abstract method in base class) to return string for full characteristics dump, __repr__ for Board display
+    Abstract base dataclass for gamepieces. Stores player, movement, and reflection data
     '''
-    
     @abstractmethod
-    def __init__(self, location: list, faction):
-        '''
-        Abstract method for initializing gamepiece
-        Big O: O(1)
-        Gamepiece properties:
-        Location: location (X,Y) (TODO: may need to be moved to Board or reference to Board)
-        Type: name of gamepiece type (ex. Scarab)
-        Faction: Imhotep (Silver) or Osiris (Red)
-        Reflection Matrix: matrix for when laser hits gamepiece
-        is_alive: Boolean for status
-        '''
-        try:
-            assert(len(location) == 2)
-            self.location = location
-            self.faction = faction
-            self._is_alive = True
-            self._type = None
-            self._reflection = None
-            pass
-        except:
-            print(f'Error in initialization of gamepiece.')
-            pass
+    def __init__(self, player : str, reflect_state = None):
+        self.player = player
+        self._can_move = True
+        self._can_rotate = True
+        self._reflect_state = list(reflect_state) if reflect_state else [4]*4
+        pass
 
     @property
     def name(self):
@@ -145,46 +107,21 @@ class Gamepiece(ABC):
         return self.__class__.__name__
 
     @property
-    def reflection(self):
-        return self._reflection
+    def can_move(self):
+        return self._can_move
     
-    @reflection.setter
-    def reflection(self, matrix: list):
-        self.reflection = ReflectMatrix(matrix)
+    @property
+    def can_rotate(self):
+        return self._can_rotate
 
-    def rotate(self, cw: bool = True):
-        '''
-        Rotate gamepiece 1/4 turn (90°) clockwise or counterclockwise using a deque.
-        Returns new body state.
-        Big O: O(1)
-        '''
-        try: 
-            new_matrix = deque(self.reflection.matrix)
-            new_matrix.rotate(1) if cw is True else new_matrix.rotate(-1) 
-            self.reflection = ReflectMatrix(new_matrix)
-            return list(new_matrix) 
-        except:
-            print('Error in rotate function!')
-    
-    def move(self, direction):
-        '''
-        Move gamepiece one space away (no diagonal).
-        Returns new location.
-        Big O: O(1)
-        '''
-        try:
-            assert(direction in DIRECTIONS)
-            self.location = [loc + offset for loc, offset in zip(self.location, MOVE_MATRIX(direction))]
-            return self.location
-        except:
-            print('Error in move function!')
+    @property
+    def reflect_state(self):
+        return self._reflect_state
 
-    def to_Duat(self):
-        '''
-        Activate gamepiece death (to Duat, Egyptian underworld)
-        '''
-        self._is_alive = False #set alive status to false
-        self.location = None #set location to none
+    @reflect_state.setter
+    def reflect_state(self, state: list):
+        assert(len(state)==4)
+        self._reflect_state = state
 
 class Sphinx(Gamepiece):
     '''
@@ -260,7 +197,10 @@ class Player():
 
 class Curator():
     # 'plays' game, asking players for input, displaying board, moves pieces, manages turns and time, checks with gamemaster for rules
-    def __init__(pass):
+    def __init__(self):
+        self.players = Player(), Player()
+        self.board = Board()
+        self.
         pass
 
 '''
@@ -273,14 +213,6 @@ def debug():
     print(f'Move() return with Argument: \'Down\':\n     {test_gamepiece.move("Down")}')
 
 if __name__ == '__main__': debug()
-
-
-
-
-
-
-
-
 
 
 '''
