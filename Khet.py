@@ -8,64 +8,52 @@
 88      .a8P   88  "8a,   ,d88  88  88     "88,   88       88  "8b,   ,aa    88,    
 88888888Y"'    88   `"YbbdP"Y8  88  88       Y8b  88       88   `"Ybbd8"'    "Y888  
                     aa,    ,88                                                      
-                     "YbbbdP"  
+                     "YbbbdP" 
+
 A digital representation of one of my favorite childhood board games: Khet - the Laser Board Game!
 By:  Blake McGill
+04/23/2022
+
 Goals:
-Make grid string generator that generates an X by Y size board with each cell being able to hold a single character
-    -equal spacing characters required
-Make GUI using tkinter
+Make into game played over tkinter GUI
 Make into game can play via HTTP PUT and GET requests
-Make both Deflexion, Khet, and Khet 2 variants
+Make both Deflexion, Khet, and Khet 2.0 variants
 Make basic AI (IDEA: use __ge__, __le__, etc. methods for evaluation of pieces/board state)
 Make error wrapper and handler class
 Make Khet-specific error types
+
 Log:
 -03/01/2021//Set up classes and brief explanation for some. Added rules dump and goals. Started Gamepiece class.
 -03/07/2021//Created PieceSide dataclass as the value for each gamepiece's side. Created debug interface to test classes.
 -03/08/2021//Updated comments, docstrings, added them where possible, continuing gamepiece class development.
 -02/20/2022//Replaced method for reflection of laser when it interacts with gamepiece (new-> ReflectMatrix)
+-04/03/2022//Worked on outline for better OOP understanding (Located on GDrive: DigiKhet Program Design)
+-04/11/2022//Entire redesign based on outline
+    -Gamepieces will only hold internal information for standard play (may hold external location info when AI implemented)
+        -No more complex reflection matrices, simple cardinal direction dictionary
+    -Board holds all Gamepiece information for pieces present
+    -Laser attached to Sphinx class (attribute of Sphinx in Khet 2.0)
+        -Will return location of wall or hit gamepiece
+    -Player class simple dataclass containing name and color
+    -Curator manages all turn-based states and actions
+-04/13/2022//Completed initial abstract base class for Gamepieces
+-04/16/2022//Completed Sphinx Gamepiece child class
+-04/17/2022//Started initial Laser class development, sidelining beam() method until Board development
+-04/21/2022//Started Board development
+-04/23/2022//Continued Board development, made Player dataclass
+    - Completed init method (aside from loading default state file)
+    - Completed structure for get_state method TODO: complete method
+    - Completed set_state method
 '''
+
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from urllib.parse import ParseResultBytes
+from dataclasses import dataclass
 
-def rotate(self, cw: bool = True):
-    '''
-    Rotate gamepiece 1/4 turn (90°) clockwise or counterclockwise using a deque.
-    Returns new body state.
-    Big O: O(1)
-    '''
-    try: 
-        new_matrix = deque(self.reflection.matrix)
-        new_matrix.rotate(1) if cw is True else new_matrix.rotate(-1) 
-        self.reflection = ReflectMatrix(new_matrix)
-        return list(new_matrix) 
-    except:
-        print('Error in rotate function!')
-
-def move(self, direction):
-    '''
-    Move gamepiece one space away (no diagonal).
-    Returns new location.
-    Big O: O(1)
-    '''
-    try:
-        assert(direction in DIRECTIONS)
-        self.location = [loc + offset for loc, offset in zip(self.location, MOVE_MATRIX(direction))]
-        return self.location
-    except:
-        print('Error in move function!')
-class Board:
-    #10x8
-    #holds state of board, including piece position, player piece count, tile type
-    def __init__(self, rank = 8, file = 10):
-        self._MAX_RANK = max(rank)
-        self._MAX_FILE = max(file)
-        self._board_state = dict()
-        for rank in range(rank):
-            for file in range(file):
-                self._board_state[(rank, file)] = None
+@dataclass
+class Player:
+    '''Retains player metadata'''
+    name: str
+    color: str
 
 class Gamepiece(ABC):
     '''
@@ -126,6 +114,7 @@ class Sphinx(Gamepiece):
         Class for laser operation.
         '''
         #Matrix to use in beam calculations: Direction : Sphinx Location, Offset to Next Beam Location
+        #implies standard board size, TODO: make agnostic of board size
         LOCATION_DIRECTION_MATRIX = {
             'N':((7, 9), (-1, 0)),
             'E':((0, 0), (0,  1)),
@@ -140,8 +129,7 @@ class Sphinx(Gamepiece):
             '''
             Uses board_state and initial direction to generate laserbeam path on board.
             Returns location of hit gamepiece, or wall indication
-            '''
-            for rank in range()
+            '''            
             pass
 
     VALID_STATE = ('Block','Block','Block','Block') #Only valid reflect state for Sphinx
@@ -182,15 +170,72 @@ class Anubis(Gamepiece):
     def __init__(self):
         pass
 
-class Gamemaster():
-    # rulemaster, checks for wins
-    def __init__(self):
-        pass
+class Board:
+    '''
+        Game board. Initialized with number of ranks (rows) and files (columns).
+        If exclusive_zones is True, maintains list of locations exclusive to each player
+        If default_state_file is passed, loads 
+    '''
+    def __init__(self, ranks = 8, files = 10, exclusive_zones = True, default_state_file = None):
+        self.MAX_RANK = max(range(ranks))
+        self.MAX_FILE = max(range(files))
+        self.board_state = dict()
+        self.exc_zones = dict()
+        if exclusive_zones:
+            #exclusive files (on own side of board)
+            home_files = {
+                'Red'    : [(rank,0) for rank in range(ranks)],
+                'Silver' : [(rank,self.MAX_FILE) for rank in range(ranks)]
+            }
+            #exclusive cells (on enemy side of board)
+            away_cells = {
+                'Red'    : [(self.MAX_RANK,self.MAX_FILE-1),(0,self.MAX_FILE-1)],
+                'Silver' : [(0+1,self.MAX_RANK),(0+1,0)]
+            }
+            for player in home_files:
+                if player in away_cells:
+                    self.exc_zones[player] = home_files[player] + away_cells[player]
+                else:
+                    pass
+        if default_state_file:
+            self.board_state = default_state_file #TODO: load dict from csv
+        for rank in range(ranks):
+            for file in range(files):
+                self.board_state[(rank, file)] = None
 
-class Player():
-    # player of game (requires 2)
-    def __init__(self):
-        pass
+    def get_state(self, location = None, gamepiece_type = None, player = None):
+        '''
+        Get state of Board based on supplied parameters. If a location is supplied, return value will be Gamepiece or None.
+        If location isn't supplied, return value will be list of tuples (rank,file) or None
+        TODO: Find a way to make more elegant than if-elif-else (and sort more logically)
+        '''
+        if gamepiece_type and player and location:
+            #return Gamepiece if same type, of player, and at location
+            pass
+        elif gamepiece_type and player:
+            #return locations of gamepieces owned by player
+            pass
+        elif gamepiece_type and location:
+            #return Gamepiece if at type at location
+            pass
+        elif player and location:
+            #return Gamepiece if owned by player at location
+            pass
+        elif gamepiece_type:
+            #return locations of gamepieces of that type
+            pass
+        elif player:
+            #return locations of gamepieces owned by player
+            pass
+        elif location:
+            #returns Gamepiece if present at location
+            pass
+        else:
+            #returns board state
+            pass
+
+    def set_state(self, location : tuple, gamepiece : Gamepiece):
+        self.board_state[location] = Gamepiece
 
 class Curator():
     # 'plays' game, asking players for input, displaying board, moves pieces, manages turns and time, checks with gamemaster for rules
@@ -199,18 +244,14 @@ class Curator():
         self.board = Board()
         pass
 
-'''
-Debug Interface: uncomment if __name__ statement to activate debug interface
-'''
 def debug():
-    test_gamepiece = Sphinx('Red',[7,7])
-    print(f'Beam() return with Argument: \'Right\':\n     {test_gamepiece.beam("Top")}')
-    print(f'Rotate() return with Argument: \'None (default=clockwise)\':\n     {test_gamepiece.rotate()}')
-    print(f'Move() return with Argument: \'Down\':\n     {test_gamepiece.move("Down")}')
+    '''
+    Debug Interface: uncomment if __name__ statement to activate debug interface
+    '''
+    pass
 
 if __name__ == '__main__': 
-    print()
-
+    debug()
 
 '''
     Rules Dump from wikipedia:
