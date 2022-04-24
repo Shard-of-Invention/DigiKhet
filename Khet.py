@@ -10,9 +10,9 @@
                     aa,    ,88                                                      
                      "YbbbdP" 
 
-A digital representation of one of my favorite childhood board games: Khet - the Laser Board Game!
+A digital version of one of my favorite childhood board games: Khet - the Laser Board Game!
 By:  Blake McGill
-04/23/2022
+Last Revision: 04/24/2022
 
 Goals:
 Make into game played over tkinter GUI
@@ -44,6 +44,7 @@ Log:
     - Completed init method (aside from loading default state file)
     - Completed structure for get_state method TODO: complete method
     - Completed set_state method
+-04/24/2022//Completed board development and Gamepieces development, continued Laser development
 '''
 
 from abc import ABC, abstractmethod
@@ -65,7 +66,6 @@ class Gamepiece(ABC):
         self.player = player
         self._can_move = True
         self._can_rotate = True
-        self._reflect_state = None
         pass
 
     @property
@@ -109,32 +109,10 @@ class Sphinx(Gamepiece):
     Gamepiece child class for Sphinx Gamepiece.
     Sphinx is stationary, and has limited rotation capabilities.
     '''
-    class Laser:
-        '''
-        Class for laser operation.
-        '''
-        #Matrix to use in beam calculations: Direction : Sphinx Location, Offset to Next Beam Location
-        #implies standard board size, TODO: make agnostic of board size
-        LOCATION_DIRECTION_MATRIX = {
-            'N':((7, 9), (-1, 0)),
-            'E':((0, 0), (0,  1)),
-            'S':((0, 0), (1,  0)),
-            'W':((7, 9), (0, -1))
-            }
-
-        def __init__(self, direction):
-            self._initial_direction = direction
-        
-        def beam(self, board_state : dict):
-            '''
-            Uses board_state and initial direction to generate laserbeam path on board.
-            Returns location of hit gamepiece, or wall indication
-            '''            
-            pass
-
-    VALID_STATE = ('Block','Block','Block','Block') #Only valid reflect state for Sphinx
+    VALID_STATES = ('Block','Block','Block','Block') #Only valid reflect state for Sphinx
     VALID_FACES_FOR = {'Red': ('S','E'), 'Silver': ('N','W')}
-    def __init__(self, player : str, face = None):
+
+    def __init__(self, player : Player, face = None):
         '''
         Initialize gamepiece for Sphinx. Ignores location parameter.
         Sphinx placed based on faction.
@@ -142,33 +120,51 @@ class Sphinx(Gamepiece):
         super.__init__(player)
         default_face = self.VALID_FACES_FOR[player][0] #default face for direction of laser
         self._face = face if face in self.VALID_FACES_FOR[player] else default_face
-        self._laser = self.Laser(self._face)
+        self._laser = Laser(self._face)
         self._can_move = False
-        self._reflect_state = self.VALID_STATE
+        self._reflect_state = self.VALID_STATES
 
     @property
     def laser(self):
         return self._laser
 
 class Pharaoh(Gamepiece):
-    def __init__(self):
+    VALID_STATES = ('Hit','Hit','Hit','Hit')
+    def __init__(self, player : Player):
+        super.__init__(player)
+        self._can_rotate = False
+        self._reflect_state = self.VALID_STATES
         pass
 
 class Scarab(Gamepiece):
-    def __init__(self):
-        pass
+    VALID_STATES = (('E','N','W','S'),('W','S','E','N'))
+    def __init__(self, player : Player, state = None):
+        super.__init__(player)
+        if state:
+            assert(state in self.VALID_STATES)
+            self._reflect_state = state
+        else:
+            self._reflect_state = self.VALID_STATES(0)
 
 class Pyramid(Gamepiece):
-    def __init__(self):
-        pass
-
-class Obelisk(Gamepiece):
-    def __init__(self):
-        pass
+    VALID_STATES = (('E','N','Hit','Hit'),('Hit','S','E','Hit'),('Hit','Hit','W','S'),('W','Hit','Hit','N'))
+    def __init__(self, player : Player, state = None):
+        super.__init__(player)
+        if state:
+            assert(state in self.VALID_STATES)
+            self._reflect_state = state
+        else:
+            self._reflect_state = self.VALID_STATES(0)
 
 class Anubis(Gamepiece):
-    def __init__(self):
-        pass
+    VALID_STATES = (('Block','Hit','Hit','Hit'),('Hit','Block','Hit','Hit'),('Hit','Hit','Block','Hit'),('Hit','Hit','Hit','Block'))
+    def __init__(self, player : Player, state = None):
+        super.__init__(player)
+        if state:
+            assert(state in self.VALID_STATES)
+            self._reflect_state = state
+        else:
+            self._reflect_state = self.VALID_STATES(0)
 
 class Board:
     '''
@@ -209,35 +205,85 @@ class Board:
         If location isn't supplied, return value will be list of tuples (rank,file) or None
         TODO: Find a way to make more elegant than if-elif-else (and sort more logically)
         '''
+        gamepiece_match = self.board_state[location].name == gamepiece_type if location else False
+        player_match = self.board_state[location].player == player if location else False
         if gamepiece_type and player and location:
             #return Gamepiece if same type, of player, and at location
-            pass
-        elif gamepiece_type and player:
-            #return locations of gamepieces owned by player
-            pass
+            return self.board_state[location] if gamepiece_match and player_match else None
         elif gamepiece_type and location:
             #return Gamepiece if at type at location
-            pass
+            return self.board_state[location] if gamepiece_match else None
         elif player and location:
             #return Gamepiece if owned by player at location
-            pass
+            return self.board_state[location] if player_match else None
+        elif location:
+            #returns Gamepiece or None if location empty
+            return self.board_state[location]
+        elif gamepiece_type and player:
+            #return locations of gamepieces owned by player
+            return [key for key in self.board_state.keys() if (self.board_state[key].player == player) and (self.board_state[key].name == gamepiece_type)]
         elif gamepiece_type:
             #return locations of gamepieces of that type
-            pass
+            return [key for key in self.board_state.keys() if self.board_state[key].name == gamepiece_type]
         elif player:
             #return locations of gamepieces owned by player
-            pass
-        elif location:
-            #returns Gamepiece if present at location
-            pass
+            return [key for key in self.board_state.keys() if self.board_state[key].player == player]
         else:
             #returns board state
-            pass
+            return self.board_state
 
     def set_state(self, location : tuple, gamepiece : Gamepiece):
-        self.board_state[location] = Gamepiece
+        self.board_state[location] = gamepiece
 
-class Curator():
+class Laser:
+    '''
+    Class for laser operation.
+    '''
+    #Matrix to use in beam calculations: Direction : Sphinx Location, Offset to Next Beam Location
+    #implies standard board size, TODO: make agnostic of board size
+
+    #(Sphinx direction: (Sphinx location, movement offset, end of rank/file in direction, opposite direction index)
+    LOCATION_DIRECTION_MATRIX = {
+        'N': ((7, 9), (-1, 0), (0, 10), 2),
+        'E': ((0, 0), (0,  1), (0, 10), 3),
+        'S': ((0, 0), (1,  0), (8, 0), 0),
+        'W': ((7, 9), (0, -1), (8, 0), 1)
+        }
+    def __init__(self, direction):
+        self._initial_direction = direction
+        self._last_beam = None
+    
+    def beam(self, board : Board):
+        '''
+        Uses board_state and initial direction to generate laserbeam path on board.
+        Returns location of hit gamepiece, or wall indication
+        ''' 
+        direction = self._initial_direction # set initial direction based on direction Sphinx is facing
+        location = self.LOCATION_DIRECTION_MATRIX[direction][0] # set initial location to be Sphinx
+        location_list = []
+        #infinite loop until function returns value, repeats per direction
+        while(True):
+            movement = self.LOCATION_DIRECTION_MATRIX[direction][1] #store step direction
+            wall = self.LOCATION_DIRECTION_MATRIX[direction][2] #store wall at end of rank/file in direction
+            oppo_idx = self.LOCATION_DIRECTION_MATRIX[direction][3] #store side of gamepiece laser will hit
+            while location is not wall: #loop until location hits wall
+                location_list.append(location) #store list of locations laser hit
+                loc_state = board.get_state(location) #fetch Gamepiece if at location
+                if loc_state is Gamepiece: #if Gamepiece at location
+                    state = loc_state.reflect_state[oppo_idx] #fetch gamepiece interaction result
+                    if state in self.LOCATION_DIRECTION_MATRIX: #if a reflection direction
+                        direction = state #make new direction
+                        break #inner while loop
+                    else: #else if hit or block
+                        self._last_beam = location_list #store location list for beam
+                        return location, state #return location and state
+                else: 
+                    location = tuple(sum(coords) for coords in zip(location,movement)) #go to next location
+            if location is wall:
+                self._last_beam = location_list #store location list for beam
+                return wall #return wall location
+
+class Curator:
     # 'plays' game, asking players for input, displaying board, moves pieces, manages turns and time, checks with gamemaster for rules
     def __init__(self):
         self.players = Player(), Player()
