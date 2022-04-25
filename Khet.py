@@ -15,36 +15,36 @@ By:  Blake McGill
 Last Revision: 04/24/2022
 
 Goals:
-Make into game played over tkinter GUI
-Make into game can play via HTTP PUT and GET requests
-Make both Deflexion, Khet, and Khet 2.0 variants
-Make basic AI (IDEA: use __ge__, __le__, etc. methods for evaluation of pieces/board state)
-Make error wrapper and handler class
-Make Khet-specific error types
+    Make into game played over tkinter GUI
+    Make into game can play via HTTP PUT and GET requests
+    Make both Deflexion, Khet, and Khet 2.0 variants
+    Make basic AI (IDEA: use __ge__, __le__, etc. methods for evaluation of pieces/board state)
+    Make error wrapper and handler class
+    Make Khet-specific error types
 
 Log:
--03/01/2021//Set up classes and brief explanation for some. Added rules dump and goals. Started Gamepiece class.
--03/07/2021//Created PieceSide dataclass as the value for each gamepiece's side. Created debug interface to test classes.
--03/08/2021//Updated comments, docstrings, added them where possible, continuing gamepiece class development.
--02/20/2022//Replaced method for reflection of laser when it interacts with gamepiece (new-> ReflectMatrix)
--04/03/2022//Worked on outline for better OOP understanding (Located on GDrive: DigiKhet Program Design)
--04/11/2022//Entire redesign based on outline
-    -Gamepieces will only hold internal information for standard play (may hold external location info when AI implemented)
-        -No more complex reflection matrices, simple cardinal direction dictionary
-    -Board holds all Gamepiece information for pieces present
-    -Laser attached to Sphinx class (attribute of Sphinx in Khet 2.0)
-        -Will return location of wall or hit gamepiece
-    -Player class simple dataclass containing name and color
-    -Curator manages all turn-based states and actions
--04/13/2022//Completed initial abstract base class for Gamepieces
--04/16/2022//Completed Sphinx Gamepiece child class
--04/17/2022//Started initial Laser class development, sidelining beam() method until Board development
--04/21/2022//Started Board development
--04/23/2022//Continued Board development, made Player dataclass
-    - Completed init method (aside from loading default state file)
-    - Completed structure for get_state method TODO: complete method
-    - Completed set_state method
--04/24/2022//Completed board development and Gamepieces development, continued Laser development
+    -03/01/2021//Set up classes and brief explanation for some. Added rules dump and goals. Started Gamepiece class.
+    -03/07/2021//Created PieceSide dataclass as the value for each gamepiece's side. Created debug interface to test classes.
+    -03/08/2021//Updated comments, docstrings, added them where possible, continuing gamepiece class development.
+    -02/20/2022//Replaced method for reflection of laser when it interacts with gamepiece (new-> ReflectMatrix)
+    -04/03/2022//Worked on outline for better OOP understanding (Located on GDrive: DigiKhet Program Design)
+    -04/11/2022//Entire redesign based on outline
+        -Gamepieces will only hold internal information for standard play (may hold external location info when AI implemented)
+            -No more complex reflection matrices, simple cardinal direction dictionary
+        -Board holds all Gamepiece information for pieces present
+        -Laser attached to Sphinx class (attribute of Sphinx in Khet 2.0)
+            -Will return location of wall or hit gamepiece
+        -Player class simple dataclass containing name and color
+        -Curator manages all turn-based states and actions
+    -04/13/2022//Completed initial abstract base class for Gamepieces
+    -04/16/2022//Completed Sphinx Gamepiece child class
+    -04/17/2022//Started initial Laser class development, sidelining beam() method until Board development
+    -04/21/2022//Started Board development
+    -04/23/2022//Continued Board development, made Player dataclass
+        - Completed init method (aside from loading default state file)
+        - Completed structure for get_state method TODO: complete method
+        - Completed set_state method
+    -04/24/2022//Completed board development and Gamepieces development, continued Laser development
 '''
 
 from abc import ABC, abstractmethod
@@ -56,13 +56,16 @@ class Player:
     name: str
     color: str
 
+    def __str__(self):
+        return self.name
+
 class Gamepiece(ABC):
     '''
     Abstract base dataclass for gamepieces. Stores player affiliation, movement 
     ruleset, and reflection data.
     '''
     @abstractmethod
-    def __init__(self, player : str):
+    def __init__(self, player : Player):
         self.player = player
         self._can_move = True
         self._can_rotate = True
@@ -144,7 +147,7 @@ class Scarab(Gamepiece):
             assert(state in self.VALID_STATES)
             self._reflect_state = state
         else:
-            self._reflect_state = self.VALID_STATES(0)
+            self._reflect_state = self.VALID_STATES[0]
 
 class Pyramid(Gamepiece):
     VALID_STATES = (('E','N','Hit','Hit'),('Hit','S','E','Hit'),('Hit','Hit','W','S'),('W','Hit','Hit','N'))
@@ -154,7 +157,7 @@ class Pyramid(Gamepiece):
             assert(state in self.VALID_STATES)
             self._reflect_state = state
         else:
-            self._reflect_state = self.VALID_STATES(0)
+            self._reflect_state = self.VALID_STATES[0]
 
 class Anubis(Gamepiece):
     VALID_STATES = (('Block','Hit','Hit','Hit'),('Hit','Block','Hit','Hit'),('Hit','Hit','Block','Hit'),('Hit','Hit','Hit','Block'))
@@ -164,7 +167,7 @@ class Anubis(Gamepiece):
             assert(state in self.VALID_STATES)
             self._reflect_state = state
         else:
-            self._reflect_state = self.VALID_STATES(0)
+            self._reflect_state = self.VALID_STATES[0]
 
 class Board:
     '''
