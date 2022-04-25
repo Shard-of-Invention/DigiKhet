@@ -286,12 +286,20 @@ class Laser:
                 self._last_beam = location_list #store location list for beam
                 return wall #return wall location
 
-class Curator:
-    # 'plays' game, asking players for input, displaying board, moves pieces, manages turns and time, checks with gamemaster for rules
-    def __init__(self):
-        self.players = Player(), Player()
-        self.board = Board()
-        pass
+def Curator():
+    #initialize Board with default state
+    #initialize Players
+    #loop for turn while win state is false
+        #requests player action
+            #click gamepiece on GUI, select action (Move/Rotate), select subaction (direction of movement or rotation)
+        #validate then perform action
+            #update GUI
+        #wait for Player to press beam on GUI
+            #update GUI
+        #retrieve beam return (either wall location, or gamepiece location and state)
+        #remove gamepiece if 'Hit'
+        #check win state
+    pass
 
 def debug():
     '''
