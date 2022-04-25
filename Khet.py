@@ -224,13 +224,13 @@ class Board:
             return self.board_state[location]
         elif gamepiece_type and player:
             #return locations of gamepieces owned by player
-            return [key for key in self.board_state.keys() if (self.board_state[key].player == player) and (self.board_state[key].name == gamepiece_type)]
+            return [loc for loc in self.board_state.keys() if (self.board_state[loc].player == player) and (self.board_state[loc].name == gamepiece_type)]
         elif gamepiece_type:
             #return locations of gamepieces of that type
-            return [key for key in self.board_state.keys() if self.board_state[key].name == gamepiece_type]
+            return [loc for loc in self.board_state.keys() if self.board_state[loc].name == gamepiece_type]
         elif player:
             #return locations of gamepieces owned by player
-            return [key for key in self.board_state.keys() if self.board_state[key].player == player]
+            return [loc for loc in self.board_state.keys() if self.board_state[loc].player == player]
         else:
             #returns board state
             return self.board_state
