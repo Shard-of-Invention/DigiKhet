@@ -288,7 +288,10 @@ class Laser:
 
 def Curator():
     #initialize Board with default state
-    #initialize Players
+    gameboard = Board(default_state_file='<REPLACE>.csv') #will have gamepieces that have Player affiliation. May need to discuss 
+    #initialize Players (perform twice)
+        #request player username (PNAME = <textfieldobjectname>.get('1.0','end-1c'))
+        #generate Player with username and color ('red','silver')
     #loop for turn while win state is false
         #requests player action
             #click gamepiece on GUI, select action (Move/Rotate), select subaction (direction of movement or rotation)
