@@ -12,15 +12,16 @@
 
 A digital version of one of my favorite childhood board games: Khet - the Laser Board Game!
 By:  Blake McGill
-Last Revision: 04/24/2022
+Last Revision: 04/27/2022
 
 Goals:
-    Make into game played over tkinter GUI
-    Make into game can play via HTTP PUT and GET requests
-    Make both Deflexion, Khet, and Khet 2.0 variants
-    Make basic AI (IDEA: use __ge__, __le__, etc. methods for evaluation of pieces/board state)
-    Make error wrapper and handler class
-    Make Khet-specific error types
+    Phase One: implement base game with simple tkinter GUI for local play
+    Phase Two: implement base game with Raspberry Pi dedicated web server for online/network play
+        -Pass game state to webpage generation script
+        -Use HTML/CSS/JS to generate webpage based on game state
+    Phase Three: implement AI for playing against computer
+        -Use evaluation dunder methods (__ge__, __eq_, etc.) for programmatic AI implementation
+        -Use neural network algorithms for advanced AI
 
 Log:
     -03/01/2021//Set up classes and brief explanation for some. Added rules dump and goals. Started Gamepiece class.
@@ -42,9 +43,11 @@ Log:
     -04/21/2022//Started Board development
     -04/23/2022//Continued Board development, made Player dataclass
         - Completed init method (aside from loading default state file)
-        - Completed structure for get_state method TODO: complete method
+        - Completed structure for get_state method
         - Completed set_state method
     -04/24/2022//Completed board development and Gamepieces development, continued Laser development
+    -04/25/2022//Completed Laser development
+    -04/27/2022//Made simple outline for Curator class, updated Program Goals
 '''
 
 from abc import ABC, abstractmethod
