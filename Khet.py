@@ -60,6 +60,7 @@ class Player:
     color: str
 
     def __str__(self):
+        '''Returns name when printed'''
         return self.name
 
 class Gamepiece(ABC):
@@ -69,18 +70,18 @@ class Gamepiece(ABC):
     '''
     @abstractmethod
     def __init__(self, player : Player):
-        self.player = player
+        self.player = player # player association
         self._can_move = True
         self._can_rotate = True
-        pass
+        pass #abs method
 
     @property
     def name(self):
-        return self.__class__.__name__
+        return self.__class__.__name__ #return name of Gamepiece type (Sphinx, Anubis, etc.)
 
     @property
     def player(self):
-        return self.player
+        return self.player #return player
 
     @property
     def can_move(self):
@@ -92,12 +93,12 @@ class Gamepiece(ABC):
 
     @property
     def reflect_state(self):
-        return self._reflect_state
+        return self._reflect_state #return reflect state for Gamepiece (N, E, S, W)
 
     @reflect_state.setter
-    def reflect_state(self, state: list):
-        assert(len(state)==4)
-        self._reflect_state = state
+    def reflect_state(self, state: list): #set gamepiece reflect state (N, E, S, W)
+        assert(len(state)==4) #throws error if not length 4 (invalid state)
+        self._reflect_state = state #sets state
 
     def __call__(self, rank: int, file: int) -> str:
         '''
@@ -108,6 +109,9 @@ class Gamepiece(ABC):
         return f'Location: rank {rank}, file {file} stored in {self.name} data.'
 
     def __str__(self) -> str:
+        '''
+        Return gamepiece name when printed.
+        '''
         return self.__class__.__name__
 
 class Sphinx(Gamepiece):
@@ -135,54 +139,49 @@ class Sphinx(Gamepiece):
         return self._laser
 
 class Pharaoh(Gamepiece):
+    '''
+    The 'King' in Khet. Player loses when this is removed. Removed when hit.
+    Can't rotate    
+    '''
     VALID_STATES = ('Hit','Hit','Hit','Hit')
     def __init__(self, player : Player):
         super.__init__(player)
         self._can_rotate = False
-        self._reflect_state = self.VALID_STATES
-        pass
+        self._reflect_state = self.VALID_STATES #only valid state
 
 class Scarab(Gamepiece):
+    '''
+    Only immortal Gamepiece. Can't be removed due to reflection on all sides.
+    Two valid states for reflection.
+    '''
     VALID_STATES = (('E','N','W','S'),('W','S','E','N'))
     def __init__(self, player : Player, state = None):
         super.__init__(player)
-        if state:
-            assert(state in self.VALID_STATES)
-            self._reflect_state = state
-        else:
-            self._reflect_state = self.VALID_STATES[0]
+        self._reflect_state = state if state in self.VALID_STATES else self.VALID_STATES[0] #sets state if valid passed, else default
 
 class Pyramid(Gamepiece):
     VALID_STATES = (('E','N','Hit','Hit'),('Hit','S','E','Hit'),('Hit','Hit','W','S'),('W','Hit','Hit','N'))
     def __init__(self, player : Player, state = None):
         super.__init__(player)
-        if state:
-            assert(state in self.VALID_STATES)
-            self._reflect_state = state
-        else:
-            self._reflect_state = self.VALID_STATES[0]
+        self._reflect_state = state if state in self.VALID_STATES else self.VALID_STATES[0] #sets state if valid passed, else default
 
 class Anubis(Gamepiece):
     VALID_STATES = (('Block','Hit','Hit','Hit'),('Hit','Block','Hit','Hit'),('Hit','Hit','Block','Hit'),('Hit','Hit','Hit','Block'))
     def __init__(self, player : Player, state = None):
         super.__init__(player)
-        if state:
-            assert(state in self.VALID_STATES)
-            self._reflect_state = state
-        else:
-            self._reflect_state = self.VALID_STATES[0]
+        self._reflect_state = state if state in self.VALID_STATES else self.VALID_STATES[0] #sets state if valid passed, else default
 
 class Board:
     '''
         Game board. Initialized with number of ranks (rows) and files (columns).
         If exclusive_zones is True, maintains list of locations exclusive to each player
-        If default_state_file is passed, loads 
+        If default_state_file is passed, loads from file
     '''
     def __init__(self, ranks = 8, files = 10, exclusive_zones = True, default_state_file = None):
-        self.MAX_RANK = max(range(ranks))
-        self.MAX_FILE = max(range(files))
-        self.board_state = dict()
-        self.exc_zones = dict()
+        self.MAX_RANK = max(range(ranks)) #height of board
+        self.MAX_FILE = max(range(files)) #width of board
+        self.board_state = dict() #board state Dict
+        self.exc_zones = dict() #exclusion zone Dict {player : zones}
         if exclusive_zones:
             #exclusive files (on own side of board)
             home_files = {
@@ -289,6 +288,20 @@ class Laser:
                 self._last_beam = location_list #store location list for beam
                 return wall #return wall location
 
+class GUI:
+    pass
+    #init based on Board size and state
+    #rank by file grid size, alternating colors (how to implement?)
+    #status section
+        #list both player names
+            #highlight whose turn it is
+        #move / rotate buttons (grayed out if gamepiece not selected)
+        #big red circle with BEAM for pressing laser beam (gray when not applicable)
+    #players gamepieces colored based on their color
+    #laser generation function (arg: beam locations)
+        #line through cell for each location (H line for laser E/W, V line for N/S)
+        #when reflected on gamepiece, change cell to red
+
 def Curator():
     #initialize Board with default state
     gameboard = Board(default_state_file='<REPLACE>.csv') #will have gamepieces that have Player affiliation. May need to discuss 
@@ -306,6 +319,8 @@ def Curator():
         #remove gamepiece if 'Hit'
         #check win state
     pass
+
+
 
 def debug():
     '''
